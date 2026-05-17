@@ -1,0 +1,97 @@
+{
+  "entities": {
+    "User": {
+      "title": "User",
+      "description": "User profile and wallet information",
+      "type": "object",
+      "properties": {
+        "fullName": { "type": "string" },
+        "email": { "type": "string" },
+        "kcxId": { "type": "string" },
+        "emovenNo": { "type": "string" },
+        "profilePhoto": { "type": "string" },
+        "city": { "type": "string" },
+        "state": { "type": "string" },
+        "country": { "type": "string" },
+        "kycStatus": { "type": "string", "enum": ["PENDING", "VERIFIED", "REJECTED"] },
+        "balance": { "type": "number" },
+        "referralCode": { "type": "string" },
+        "pin": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["fullName", "email", "kcxId", "emovenNo", "balance"]
+    },
+    "Transaction": {
+      "title": "Transaction",
+      "description": "Financial transaction between users or from system",
+      "type": "object",
+      "properties": {
+        "fromId": { "type": "string" },
+        "toId": { "type": "string" },
+        "amount": { "type": "number" },
+        "type": { "type": "string", "enum": ["SEND", "RECEIVE", "REQUEST", "ADD"] },
+        "status": { "type": "string", "enum": ["COMPLETED", "PENDING", "FAILED"] },
+        "note": { "type": "string" },
+        "timestamp": { "type": "string", "format": "date-time" }
+      },
+      "required": ["amount", "type", "status", "timestamp"]
+    },
+    "Merchant": {
+      "title": "Merchant",
+      "description": "Business or Shop registered in the network",
+      "type": "object",
+      "properties": {
+        "ownerId": { "type": "string" },
+        "businessName": { "type": "string" },
+        "category": { "type": "string" },
+        "address": { "type": "string" },
+        "lat": { "type": "number" },
+        "lng": { "type": "number" },
+        "photos": { "type": "array" },
+        "workingHours": { "type": "string" },
+        "contact": { "type": "string" },
+        "acceptsKCX": { "type": "boolean" },
+        "delivery": { "type": "boolean" },
+        "verified": { "type": "boolean" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["ownerId", "businessName", "category", "acceptsKCX"]
+    },
+    "Task": {
+      "title": "Task",
+      "description": "Kindness Credits Community Contribution (KCCC) task",
+      "type": "object",
+      "properties": {
+        "requesterId": { "type": "string" },
+        "workerId": { "type": "string" },
+        "title": { "type": "string" },
+        "description": { "type": "string" },
+        "amount": { "type": "number" },
+        "status": { "type": "string", "enum": ["OPEN", "ACCEPTED", "COMPLETED", "CANCELLED"] },
+        "rating": { "type": "number" },
+        "proofUrl": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["requesterId", "title", "amount", "status", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": "User",
+      "description": "User profiles"
+    },
+    "/transactions/{transactionId}": {
+      "schema": "Transaction",
+      "description": "Global transactions log"
+    },
+    "/merchants/{merchantId}": {
+      "schema": "Merchant",
+      "description": "Merchant directory"
+    },
+    "/tasks/{taskId}": {
+      "schema": "Task",
+      "description": "KCCC tasks"
+    }
+  }
+}

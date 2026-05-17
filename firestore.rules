@@ -1,0 +1,107 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 0. Global Safety Net
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // --- Helpers ---
+    function isSignedIn() { return request.auth != null; }
+    function isValidId(id) { return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); }
+    function incoming() { return request.resource.data; }
+    function existing() { return resource.data; }
+    function isOwner(userId) { return isSignedIn() && request.auth.uid == userId; }
+    function isEmailVerified() { return request.auth.token.email_verified == true; }
+    
+    // KCX Specific: Allowed domains
+    function isAuthorizedEmail() {
+      return isSignedIn() && 
+             (request.auth.token.email.matches('.*@proton\\.me$') || 
+              request.auth.token.email.matches('.*@protonmail\\.com$') ||
+              request.auth.token.email.matches('.*@gmail\\.com$'));
+    }
+
+    // --- Validation Blueprints ---
+    
+    function isValidUser(data) {
+      return data.fullName is string && data.fullName.size() <= 100 &&
+             data.email is string &&
+             data.kcxId is string &&
+             data.emovenNo is string &&
+             data.balance is number &&
+             data.kycStatus in ['PENDING', 'VERIFIED', 'REJECTED'];
+    }
+
+    function isNewUser(data) {
+      return isValidUser(data) && 
+             data.createdAt == request.time &&
+             data.kycStatus == 'PENDING';
+    }
+
+    function isValidTransaction(data) {
+      return data.keys().hasAll(['amount', 'type', 'status', 'timestamp', 'fromId', 'toId']) &&
+             data.amount is number && data.amount > 0 &&
+             data.type in ['SEND', 'RECEIVE', 'REQUEST', 'ADD'] &&
+             data.status in ['COMPLETED', 'PENDING', 'FAILED'] &&
+             data.timestamp == request.time;
+    }
+
+    function isValidMerchant(data) {
+      return data.keys().hasAll(['ownerId', 'businessName', 'category', 'acceptsKCX']) &&
+             data.ownerId == request.auth.uid &&
+             data.businessName is string && data.businessName.size() <= 200 &&
+             data.category is string &&
+             data.acceptsKCX is bool;
+    }
+
+    function isValidTask(data) {
+      return data.keys().hasAll(['requesterId', 'requesterName', 'title', 'description', 'amount', 'status', 'createdAt']) &&
+             data.requesterId == request.auth.uid &&
+             data.requesterName is string &&
+             data.title is string && data.title.size() <= 200 &&
+             data.description is string &&
+             data.amount is number && data.amount > 0 &&
+             data.status in ['OPEN', 'ACCEPTED', 'COMPLETED', 'CANCELLED'] &&
+             data.createdAt == request.time;
+    }
+
+    // --- Match Blocks ---
+
+    match /users/{userId} {
+      allow get: if isSignedIn();
+      allow list: if isSignedIn();
+      allow create: if isOwner(userId) && isAuthorizedEmail() && isNewUser(incoming());
+      allow update: if isOwner(userId) && isValidUser(incoming()) && (
+        (incoming().diff(existing()).affectedKeys().hasOnly(['fullName', 'profilePhoto', 'city', 'state', 'country', 'pin']))
+      );
+    }
+
+    match /transactions/{transactionId} {
+      allow read: if isSignedIn() && isValidId(transactionId) && (resource.data.fromId == request.auth.uid || resource.data.toId == request.auth.uid);
+      allow create: if isSignedIn() && isValidTransaction(incoming()) && (
+        incoming().fromId == request.auth.uid || incoming().type == 'ADD'
+      );
+    }
+
+    match /merchants/{merchantId} {
+      allow get: if isValidId(merchantId);
+      allow list: if isSignedIn();
+      allow create: if isSignedIn() && isValidMerchant(incoming());
+      allow update: if isSignedIn() && existing().ownerId == request.auth.uid && isValidMerchant(incoming()) &&
+                    incoming().diff(existing()).affectedKeys().hasOnly(['businessName', 'category', 'address', 'location', 'photos', 'workingHours', 'contact', 'acceptsKCX', 'delivery']);
+      allow delete: if isSignedIn() && existing().ownerId == request.auth.uid;
+    }
+
+    match /tasks/{taskId} {
+      allow get: if isValidId(taskId);
+      allow list: if isSignedIn();
+      allow create: if isSignedIn() && isValidTask(incoming());
+      allow update: if isSignedIn() && (
+        (existing().requesterId == request.auth.uid && incoming().diff(existing()).affectedKeys().hasOnly(['title', 'description', 'amount', 'status'])) ||
+        (incoming().status == 'ACCEPTED' && existing().status == 'OPEN' && incoming().workerId == request.auth.uid && incoming().diff(existing()).affectedKeys().hasOnly(['status', 'workerId'])) ||
+        (existing().workerId == request.auth.uid && incoming().status == 'COMPLETED' && incoming().diff(existing()).affectedKeys().hasOnly(['status', 'proofUrl']))
+      );
+    }
+  }
+}

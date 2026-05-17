@@ -1,0 +1,39 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=JetBrains+Mono:wght@400;700&display=swap');
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+  
+  --color-indigo-950: #1e1b4b;
+  --radius-3xl: 1.5rem;
+  --radius-4xl: 2rem;
+}
+
+@layer base {
+  body {
+    @apply bg-slate-50 text-slate-900 font-sans antialiased selection:bg-indigo-100;
+  }
+}
+
+@layer components {
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  
+  .kcx-card {
+    @apply bg-white border border-slate-200 rounded-3xl shadow-sm overflow-hidden;
+  }
+  
+  .kcx-gradient-card {
+    @apply bg-gradient-to-br from-slate-900 to-indigo-950 rounded-3xl text-white shadow-2xl relative overflow-hidden;
+  }
+
+  .kcx-label {
+    @apply text-[10px] font-black text-slate-400 uppercase tracking-widest;
+  }
+}

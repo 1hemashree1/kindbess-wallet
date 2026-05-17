@@ -1,0 +1,6 @@
+{
+  "name": "KCX - Kindness Credits Xchange",
+  "description": "Secure Fintech Protocol for Kindness Credits Xchange. Local business discovery, task rewards, and P2P payments.",
+  "requestFramePermissions": ["camera", "geolocation"],
+  "majorCapabilities": []
+}
